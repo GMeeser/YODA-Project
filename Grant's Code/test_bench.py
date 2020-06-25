@@ -61,7 +61,15 @@ for i in range(0,len(input_image_array)):
 #Chunk and send data to FPGA
 output_image_array = []
 for i in range(0,len(input_image_array),chunk_size):
-    com.write(input_image_array[i:i+chunk_size]+b'111')
+    send_byte_string = b''
+
+    for j in range(0,chunk_size):
+        try:
+            send_byte_string = send_byte_string + input_image_array[i+j]
+        except:
+            break
+
+    com.write(send_byte_string+b'111')
     output_image_array.append(com.read(chunk_size))
 
 #Check received data against golden measure
