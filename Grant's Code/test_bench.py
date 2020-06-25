@@ -31,7 +31,7 @@ input_image_name = input("Path to image to use => ")
 com_port = input("Com port to use => ")
 #initialise com port
 try:
-    com = Serial(com_port,timeout=10,baudrate=115200)
+    com = Serial(com_port,timeout=1,baudrate=115200)
 except:
     print("Cannot open",com_port)
     exit()
@@ -49,8 +49,13 @@ except:
 
 #Golden Meausre
 output_image_array_golden = []
+offset = golden_offset
 for i in range(0,len(input_image_array)):
-    offset = ((int.from_bytes(golden_offset,'big') + i) % 256).to_bytes(1,'big')
+    offset = (((int.from_bytes(offset,'big') + i) % 256)).to_bytes(1,'big')
+    
+    if i % chunk_size == 0:
+        offset = golden_offset
+
     output_image_array_golden.append(byte_xor(input_image_array[i],byte_xor(golden_key,offset)))
 
 #Chunk and send data to FPGA
