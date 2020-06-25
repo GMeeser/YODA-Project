@@ -6,13 +6,12 @@ G. Meeser (grant@meeser.co.za)
 
 from PIL import Image
 from serial import Serial
+import time
 import functions
 
 chunk_size = 250
 
 def byte_xor(ba1, ba2):
-    # ba1 = ba1.to_bytes(1,byteorder='big')
-    # ba2 = ba2.to_bytes(1,byteorder='big')
     return bytes([_a ^ _b for _a, _b in zip(ba1, ba2)])
 
 def inputNumber(message):
@@ -29,6 +28,11 @@ def inputNumber(message):
 #Get image and COM port data from user
 input_image_name = input("Path to image to use => ")
 com_port = input("Com port to use => ")
+
+#Golden Measure Key and Offset
+golden_key = (inputNumber("KEY (Integer) => ") % 256).to_bytes(1,'big')
+golden_offset = (inputNumber("Offset (Integer) => ") % 256).to_bytes(1,'big')
+
 #initialise com port
 try:
     print("Init COM... ",end="")
@@ -37,10 +41,6 @@ try:
 except:
     print("Cannot open",com_port)
     exit()
-
-#Golden Meause Key and Offset
-golden_key = (inputNumber("KEY (Integer) => ") % 256).to_bytes(1,'big')
-golden_offset = (inputNumber("Offset (Integer) => ") % 256).to_bytes(1,'big')
 
 #Load image and convert to flat byte array
 try:
@@ -51,23 +51,26 @@ except:
 
 #Golden Meausre
 print("Producing golden measure... ",end='')
+tic = time.time()
 output_image_array_golden = b''
 offset = golden_offset
 chunk = b''
 for i in range(0,len(input_image_array)):
-    offset = (((int.from_bytes(offset,'big') + 1) % 256)).to_bytes(1,'big')
     
-    if i % chunk_size+1 == 0 and i > 0:
+    if (i % (chunk_size) == 0) and (i > 0):
         offset = golden_offset
-        output_image_array_golden = output_image_array_golden + chunk
-        chunk = b''
-    else:
-        chunk = chunk + byte_xor(input_image_array[i],byte_xor(golden_key,offset))
+
+    output_image_array_golden = output_image_array_golden + byte_xor(input_image_array[i],byte_xor(golden_key,offset))
+    
+    offset = (((int.from_bytes(offset,'big') + 1) % 256)).to_bytes(1,'big')
+
 print("DONE")
+print("Time Taken:", (time.time()-tic),"seconds")
     
 
 #Chunk and send data to FPGA
 print("Sending data to FPGA... ",end='')
+tic = time.time()
 output_image_array = b''
 for i in range(0,len(input_image_array),chunk_size):
     send_byte_string = b''
@@ -81,14 +84,15 @@ for i in range(0,len(input_image_array),chunk_size):
     com.write(send_byte_string + b'111')
     output_image_array = output_image_array + com.read(chunk_size)
 print("DONE")
-
-#Check received data against golden measure
-for i in range(0,len(output_image_array_golden)):
+print("Time Taken:", (time.time()-tic),"seconds")
+# Check received data against golden measure
+for i in range(0,len(input_image_array)):
     if output_image_array_golden[i] != output_image_array[i]:
         print("Golden measure does not matched recieved data")
         exit()
 
 print("Recieved data matches golden measure!")
 
+
 #Rebuild image from byte array
-functions.arrayToImage(output_image_array,input_image_name)
+functions.arrayToImage(output_image_array_golden,input_image_name)
