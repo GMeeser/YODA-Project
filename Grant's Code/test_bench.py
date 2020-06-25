@@ -31,7 +31,9 @@ input_image_name = input("Path to image to use => ")
 com_port = input("Com port to use => ")
 #initialise com port
 try:
+    print("Init COM... ",end="")
     com = Serial(com_port,timeout=1,baudrate=115200)
+    print("DONE")
 except:
     print("Cannot open",com_port)
     exit()
@@ -48,18 +50,25 @@ except:
     exit()
 
 #Golden Meausre
-output_image_array_golden = []
+print("Producing golden measure... ",end='')
+output_image_array_golden = b''
 offset = golden_offset
+chunk = b''
 for i in range(0,len(input_image_array)):
-    offset = (((int.from_bytes(offset,'big') + i) % 256)).to_bytes(1,'big')
+    offset = (((int.from_bytes(offset,'big') + 1) % 256)).to_bytes(1,'big')
     
-    if i % chunk_size == 0:
+    if i % chunk_size+1 == 0 and i > 0:
         offset = golden_offset
-
-    output_image_array_golden.append(byte_xor(input_image_array[i],byte_xor(golden_key,offset)))
+        output_image_array_golden = output_image_array_golden + chunk
+        chunk = b''
+    else:
+        chunk = chunk + byte_xor(input_image_array[i],byte_xor(golden_key,offset))
+print("DONE")
+    
 
 #Chunk and send data to FPGA
-output_image_array = []
+print("Sending data to FPGA... ",end='')
+output_image_array = b''
 for i in range(0,len(input_image_array),chunk_size):
     send_byte_string = b''
 
@@ -69,13 +78,15 @@ for i in range(0,len(input_image_array),chunk_size):
         except:
             break
 
-    com.write(send_byte_string+b'111')
-    output_image_array.append(com.read(chunk_size))
+    com.write(send_byte_string + b'111')
+    output_image_array = output_image_array + com.read(chunk_size)
+print("DONE")
 
 #Check received data against golden measure
-for i in range(0,len(input_image_array)):
-    if input_image_array[i] != output_image_array[i]:
-        raise Exception("Golden measure does not matched recieved data")
+for i in range(0,len(output_image_array_golden)):
+    if output_image_array_golden[i] != output_image_array[i]:
+        print("Golden measure does not matched recieved data")
+        exit()
 
 print("Recieved data matches golden measure!")
 

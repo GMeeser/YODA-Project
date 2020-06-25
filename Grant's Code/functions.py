@@ -15,8 +15,8 @@ def integerArrayToByteArray(integer_array):
 
 def byteArrayToIntegerArray(byte_array):
     integer_array = []
-    for i in byte_array:
-        integer_array.append(int.from_bytes(i,'big'))
+    for i in range(0,len(byte_array)):
+        integer_array.append(byte_array[i])
 
     return integer_array
 
