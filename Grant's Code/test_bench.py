@@ -92,7 +92,7 @@ for i in range(0,len(input_image_array)):
         print("Golden measure does not matched recieved data")
         exit()
 
-print("Recieved data matches golden measure!")
+print("Received data matches golden measure!")
 
 
 #Rebuild image from byte array
