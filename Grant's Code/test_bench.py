@@ -9,10 +9,10 @@ from serial import Serial
 import time
 import functions
 
-chunk_size = 250
+chunk_size = 2048
 
 def byte_xor(ba1, ba2):
-    return bytes([_a ^ _b for _a, _b in zip(ba1, ba2)])
+    return (int.from_bytes(ba1,'big')^int.from_bytes(ba2,'big')).to_bytes(1,'big')
 
 def inputNumber(message):
   while True:
@@ -36,7 +36,7 @@ golden_offset = (inputNumber("Offset (Integer) => ") % 256).to_bytes(1,'big')
 #initialise com port
 try:
     print("Init COM... ",end="")
-    com = Serial(com_port,timeout=1,baudrate=115200)
+    com = Serial(com_port,timeout=1,baudrate=115200, bytesize=EIGHTBITS, parity=PARITY_NONE, stopbits=STOPBITS_ONE)
     print("DONE")
 except:
     print("Cannot open",com_port)
@@ -85,6 +85,7 @@ for i in range(0,len(input_image_array),chunk_size):
     output_image_array = output_image_array + com.read(chunk_size)
 print("DONE")
 print("Time Taken:", (time.time()-tic),"seconds")
+
 # Check received data against golden measure
 for i in range(0,len(input_image_array)):
     if output_image_array_golden[i] != output_image_array[i]:
