@@ -6,14 +6,6 @@ Created on Wed Jun 24 16:28:15 2020
 """
 from PIL import Image
 
-def integerArrayToByteArray(integer_array):
-    byte_array = []
-    # byte_array = bytearray(integer_array)
-    # for i in integer_array:
-    #     byte_array.append(i.to_bytes(1,'big'))
-
-    return integer_array
-
 def byteArrayToIntegerArray(byte_array):
     integer_array = []
     for i in byte_array:
@@ -31,8 +23,7 @@ def imageToArray(im_file):
     number_in_tuple = len(pix_val[0])
     #1D list
     pix_val_flat = [x for sets in pix_val for x in sets]
-    #To access use pix_val_flat, number_in_tuple = imageToArray(the_image.bmp)
-    return integerArrayToByteArray(pix_val_flat), number_in_tuple
+    return pix_val_flat, number_in_tuple
 
 def arrayToImageArray(encrypted_array, number_in_tuple):
     encrypted_array = byteArrayToIntegerArray(encrypted_array)
